@@ -1,10 +1,11 @@
-name: ios-build-action
+name: ios-build-action-dev
 
-# 推送Tag时触发
+# 手动触发和推送到dev分支时触发
 on:
+  workflow_dispatch:
   push:
-    tags:
-      - "v*"
+    branches:
+      - 'dev'
 
 jobs:
   build-ios:
@@ -15,7 +16,7 @@ jobs:
       # 签出代码
       - uses: actions/checkout@v4
         with:
-          ref: master
+          ref: dev
 
       # 设置Flutter
       - name: Flutter action
@@ -54,23 +55,23 @@ jobs:
           path: |
             simple_live_app/build/ios/iphoneos/ios_no_sign.ipa
 
-      # 读取版本信息
+      # 读取版本信息（可选，如果不需要发布到Release可以删除）
       - name: Read version
         id: version
         uses: juliangruber/read-file-action@v1
         with:
           path: assets/app_version.json
 
-      # 上传至Release
-      - name: Upload Release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: "${{ fromJson(steps.version.outputs.content).version }}"
-          body: "${{ fromJson(steps.version.outputs.content).version_desc }}"
-          prerelease: ${{ fromJson(steps.version.outputs.content).prerelease }}
-          token: ${{ secrets.TOKEN }}
-          files: |
-            simple_live_app/build/ios/iphoneos/ios_no_sign.ipa
+      # 上传至Release（可选，开发版本通常不需要）
+      # - name: Upload Release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     name: "${{ fromJson(steps.version.outputs.content).version }}"
+      #     body: "${{ fromJson(steps.version.outputs.content).version_desc }}"
+      #     prerelease: ${{ fromJson(steps.version.outputs.content).prerelease }}
+      #     token: ${{ secrets.TOKEN }}
+      #     files: |
+      #       simple_live_app/build/ios/iphoneos/ios_no_sign.ipa
 
       # 完成
       - run: echo "🍏 iOS build completed with status ${{ job.status }}."
