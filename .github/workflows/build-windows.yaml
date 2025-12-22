@@ -1,0 +1,80 @@
+name: build-windows-only
+
+on:
+  # ✅ GitHub 页面手动触发
+  workflow_dispatch:
+
+  # （可选）如果你还想保留 tag 触发，可以取消注释
+  # push:
+  #   tags:
+  #     - "v*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      # 1️⃣ 签出代码
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      # 2️⃣ 设置 Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.38.x"
+          cache: true
+
+      # 3️⃣ 启用 Windows Desktop
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      # 4️⃣ 拉取依赖
+      - name: Restore Packages
+        run: |
+          cd simple_live_app
+          flutter pub get
+
+      # 5️⃣ 安装 flutter_distributor
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+
+      # 6️⃣ 打包 Windows（MSIX + ZIP）
+      - name: Build Windows
+        run: |
+          cd simple_live_app
+          flutter_distributor package --platform windows --targets msix,zip --skip-clean
+
+      # 7️⃣ 上传构建产物（Artifacts）
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            simple_live_app/build/dist/*/*.msix
+            simple_live_app/build/dist/*/*.zip
+
+      # 8️⃣ 读取版本信息
+      - name: Read version
+        id: version
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: assets/app_version.json
+
+      # 9️⃣ 发布 GitHub Release
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "${{ fromJson(steps.version.outputs.content).version }}"
+          body: "${{ fromJson(steps.version.outputs.content).version_desc }}"
+          prerelease: ${{ fromJson(steps.version.outputs.content).prerelease }}
+          token: ${{ secrets.TOKEN }}
+          files: |
+            simple_live_app/build/dist/*/*.msix
+            simple_live_app/build/dist/*/*.zip
+
+      - run: echo "✅ Windows build finished with status ${{ job.status }}"
