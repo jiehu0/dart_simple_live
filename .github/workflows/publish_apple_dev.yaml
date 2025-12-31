@@ -1,4 +1,4 @@
-name: Build iOS & macOS App_dav
+name: Build iOS & macOS App_dev
 # 推送Tag时触发
 on:
   push:
@@ -14,7 +14,8 @@ jobs:
     steps:
       # 签出代码
       - uses: actions/checkout@v4
-
+        with:
+          ref: dev
 
       # 设置Flutter (无需 Java，因为不构建 Android)
       - name: Flutter action
