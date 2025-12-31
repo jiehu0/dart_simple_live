@@ -3,7 +3,11 @@ name: Build iOS & macOS App
 on:
   push:
     tags:
-      - "v*"
+      - "dev_v*"
+
+
+
+      
   workflow_dispatch:  # <--- 新增这行，允许手动触发
 jobs:
   # 仅打包 Mac 和 iOS
